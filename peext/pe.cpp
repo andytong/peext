@@ -368,7 +368,7 @@ HRESULT PE_PrintSection(ULONG_PTR ulBaseAddress, ULONG ulSetionCount, BOOL bSect
 	return result;
 }
 
-HRESULT PE_PrintImport(PBYTE pBase, IMAGE_DATA_DIRECTORY DataImport, BOOL bImport)
+HRESULT PE_PrintImport(PBYTE pBase, IMAGE_DATA_DIRECTORY DataImport, cmdline<char>& cmd)
 {
 	HRESULT                    result = S_OK;
 	PIMAGE_IMPORT_DESCRIPTOR   pImportBlack = NULL;
@@ -383,16 +383,17 @@ HRESULT PE_PrintImport(PBYTE pBase, IMAGE_DATA_DIRECTORY DataImport, BOOL bImpor
 		return S_OK;
 	}
 	char* pDllName = NULL;
-	if (bImport)
+	std::vector<std::string>* vargs = cmd.GetSwitchCmd("-import");
+	while (pImportBlack->Name != 0 /*&& pImportBlack->Characteristics != 0*/)
 	{
-		while (pImportBlack->Name != 0 /*&& pImportBlack->Characteristics != 0*/)
+		pFirstThunkData = (PIMAGE_THUNK_DATA)((ULONG_PTR)pBase + (ULONG)(pImportBlack->FirstThunk));
+		if (pImportBlack->OriginalFirstThunk)
+			pOriginalThunkData = (PIMAGE_THUNK_DATA)((ULONG_PTR)pBase + (ULONG)(pImportBlack->OriginalFirstThunk));
+		else
+			pOriginalThunkData = pFirstThunkData;
+		pDllName = (PCHAR)((ULONG_PTR)pBase + (ULONG_PTR)pImportBlack->Name);
+		if(!vargs || vargs->empty() || (pDllName &&*(vargs->begin()) == pDllName))
 		{
-			pFirstThunkData = (PIMAGE_THUNK_DATA)((ULONG_PTR)pBase + (ULONG)(pImportBlack->FirstThunk));
-			if (pImportBlack->OriginalFirstThunk)
-				pOriginalThunkData = (PIMAGE_THUNK_DATA)((ULONG_PTR)pBase + (ULONG)(pImportBlack->OriginalFirstThunk));
-			else
-				pOriginalThunkData = pFirstThunkData;
-			pDllName = (PCHAR)((ULONG_PTR)pBase + (ULONG_PTR)pImportBlack->Name);
 			dprintf("DLL  name  is  %s\n", pDllName);
 			dprintf("Index    Offset    Address      Name \n");
 			while (pFirstThunkData->u1.Ordinal != 0)
@@ -409,8 +410,8 @@ HRESULT PE_PrintImport(PBYTE pBase, IMAGE_DATA_DIRECTORY DataImport, BOOL bImpor
 				pOriginalThunkData++;
 				pFirstThunkData++;
 			}
-			pImportBlack++;
 		}
+		pImportBlack++;
 	}
 	return result;
 }
@@ -617,7 +618,7 @@ HRESULT ExecuteCmd(PDEBUG_CLIENT4 Client, PCSTR args) {
 			}
 			else {
 				if (bHasImport) {
-					result = PE_PrintImport(pImage, DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT], bHasImport);
+					result = PE_PrintImport(pImage, DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT], cmd);
 					if (result != S_OK) {
 						dprintf("***Print import fail***\n");
 					}

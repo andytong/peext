@@ -34,7 +34,7 @@ LONGLONG StrToAddress(LPCSTR str, DWORD flag)//STIF_SUPPORT_HEX
 {
 	DWORD_PTR dwAddress = 0;
 	int len = static_cast<int>(strlen(str));
-	LPSTR temp = new char(len + 3);
+	LPSTR temp = new char[len + 3];
 	if (NULL == temp)
 		return 0;
 	int copy_offset = 2;
@@ -49,7 +49,7 @@ LONGLONG StrToAddress(LPCSTR str, DWORD flag)//STIF_SUPPORT_HEX
 	}
 
 	if (trim_char) {
-		StrCpyNA(temp + copy_offset, str, static_cast<int>(trim_char - str));
+		StrCpyNA(temp + copy_offset, str, static_cast<int>(trim_char - str)+1);
 		StrCatA(temp + copy_offset, trim_char + 1);
 	}
 	else {
